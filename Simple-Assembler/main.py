@@ -49,11 +49,13 @@ def genBin(typ, cmnd):
             print ("Syntax Error")
             return -1
         if inst == 'r':
-            if(cmnd[idx] == "FLAGS" and typ==2 and idx==2):
-                rBin = "111"
-            else:
-                print ("Illegal Flag Usage")
-            if (cmnd[idx][0] == 'R') and cmnd[idx][1:].isdigit() and 0 <= int(cmnd[idx][1:]) <= 6:
+            if(cmnd[idx] == "FLAGS"):
+                if(typ==2 and idx==2):
+                    rBin = "111"
+                    binOut += rBin
+                else:
+                    print ("Illegal Flag Usage")
+            elif (cmnd[idx][0] == 'R') and cmnd[idx][1:].isdigit() and 0 <= int(cmnd[idx][1:]) <= 6:
                 rBin = givBin(cmnd[idx][1:],3)
                 binOut += rBin
             else:
@@ -124,7 +126,7 @@ def gotError(cmndLine,lncount,lnNum):
     if cmndLine[0] == 'var' and lncount != 0:
         print("Invalid variable assignment", lnNo)
         return True
-    if (cmndLine[0] == 'hlt' or len(cmndLine) > 1) :
+    if (cmndLine[0] == 'hlt' and len(cmndLine) > 1) :
         print ("Invalid use of hlt function", lnNo)
         return True
     return False
@@ -140,7 +142,7 @@ def readCmnd(cmndLine):
     return cmndLine.split()
 
 def isValidMemAdd (memAdd):
-    reservedKey = regList.keys()
+    reservedKey = list(regList.keys())
     reservedKey.remove('movI')
     reservedKey.remove('movR')
     reservedKey.append('mov')
@@ -182,7 +184,7 @@ def preProcess():
                     memAddDict[line[0][:-1]] = lncount
                     inputCode.append(line[1:])
                 else:
-                    print("Label Misuse")
+                    print("Label Misuse for Label",line[0][-1])
                     return -1
 
             else:
