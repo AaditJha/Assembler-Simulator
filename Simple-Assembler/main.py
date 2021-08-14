@@ -1,17 +1,24 @@
 import sys
 from collections import OrderedDict
-#regList -> Mapping between opcode in decimal and Type (A as 0,B as 1,...)
+
+
+#global variables
 hltCount=0
 asmLnCount = 0
 lnNo = ''
+#OrderedDict that maps labels and variables to its corresponding address in preProcess()
 memAddDict = OrderedDict()
 
+
+#This is the color class for the colored output (for handling errors)
 class bcol:
     cend = '\33[0m'
     cred = '\33[31m'
     cyel = '\33[33m'
     cblu = '\33[34m'
 
+
+#regList is a dict mapping instructions to type (A=0, B=1,...)
 regList = {
     "add"  :0,
     "sub"  :0,
@@ -36,17 +43,24 @@ regList = {
     }
 
 
-binEncoding = [['u2','r','r','r'],['r','im'],
-['u5','r','r'],['r','mem'],['u3','mem'],
-['u11']]
+#This is the ISA instruction format corresponding to type.
+binEncoding = [['u2','r','r','r'],['r','im'],['u5','r','r'],['r','mem'],['u3','mem'],['u11']]
 
+
+#Helper function for binary padding
 def givBin(intVal,bitsize):
     intVal = int(intVal)
     binStr = str(bin(intVal))[2:]
     binStr = '0'*(bitsize - len(binStr)) + binStr
-    return binStr
+    return 
+    
 
 def genBin(typ, cmnd):
+    '''
+    Converts a given instruction into binary.
+    Handles syntax error and illegal flag usage
+    Returns a string that is the binary of a given instruction in cmnd
+    '''
     errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in cmnd)+bcol.cend
     errLine = errLine.replace("movR","mov")
     errLine = errLine.replace("movI","mov")
@@ -55,12 +69,15 @@ def genBin(typ, cmnd):
     binOut = opBin
     instISA = binEncoding[typ]
     idx = 1
+    
     for inst in instISA:
         if idx == len(cmnd) and typ != 5:
             print(bcol.cred+"Syntax Error"+bcol.cend,lnNo)
             print(errLine)
             return -1
+
         if inst == 'r':
+
             if(cmnd[idx] == "FLAGS"):
                 if(typ==2 and idx==2):
                     rBin = "111"
@@ -69,15 +86,18 @@ def genBin(typ, cmnd):
                     print(bcol.cred+"Illegal Flag Usage"+bcol.cend,lnNo)
                     print(errLine)
                     return -1
+
             elif (cmnd[idx][0] == 'R') and cmnd[idx][1:].isdigit() and 0 <= int(cmnd[idx][1:]) <= 6:
                 rBin = givBin(cmnd[idx][1:],3)
                 binOut += rBin
+
             else:
                 print(bcol.cred+"Invalid Register Type"+bcol.cend,lnNo)
                 print(errLine)
                 return -1
 
         elif inst == 'mem':
+
             try:
                 addBin = givBin(memAddDict[cmnd[idx]],8)
                 binOut += addBin
@@ -91,11 +111,13 @@ def genBin(typ, cmnd):
                 return -1    
     
         elif inst == 'im':
+
             if not (cmnd[idx][1:].isdigit()):
                 print(bcol.cred+"Invalid Immediate Value"+bcol.cend,lnNo)
                 print(errLine)
                 print(bcol.cyel+"Note: Immediate Value must be an integer and in range [0,255]."+bcol.cend)
                 return -1
+
             if not (0 <= int(cmnd[idx][1:]) <= 255):
                 print(bcol.cred+"Invalid Immediate Value"+bcol.cend,lnNo)    
                 print(errLine)
@@ -110,13 +132,20 @@ def genBin(typ, cmnd):
             binOut += '0'*bitSize
 
         idx += 1
+
     if idx != len(cmnd):
         print(bcol.cred+"Syntax Error"+bcol.cend,lnNo)
         print(errLine)
         return -1
+
     return binOut
 
+
 def getOpType(cmnd):
+    '''
+    Returns the type of instruction from the given instruction
+    Else prints an error and returns -1
+    '''
     errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in cmnd)+bcol.cend
     if cmnd[0] == 'mov':
         if cmnd[2][0] == "$":
@@ -141,7 +170,15 @@ def getOpType(cmnd):
             print(errLine)
             return -1
 
+
 def gotError(cmndLine,lncount):
+    '''
+    Handles if:
+        there are multiple hlt instructions
+        number of operations exceeds 256
+        initialize a variable not at the starting of the code
+        hlt used incorrectly
+    '''
     errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in cmndLine)+bcol.cend
     if hltCount > 1:
         print(bcol.cred+"Multiple hlt instructions"+bcol.cend, lnNo)
@@ -162,44 +199,48 @@ def gotError(cmndLine,lncount):
     return False
     
 
-    
-
-
+#Wrapper function to convert a string into a list of strings after stripping whitespaces
 def readCmnd(cmndLine):
-    '''
-    take a string and return it after splitting making a list.
-    '''
     return cmndLine.split()
 
+
 def isValidMemAdd (memAdd):
+    '''
+    Checks if given label/variable:
+        is not a reserved keyword (Instruction or register)
+        is not purely numerical and does not contain special characters (other than _)
+        is not an existing label/variable name
+    '''
     reservedKey = list(regList.keys())
     reservedKey.remove('movI')
     reservedKey.remove('movR')
     reservedKey.append('mov')
     reservedKey.append('FLAGS')
     for i in range (7):
-        reservedKey.append('R'+str(i))
+        reservedKey.append('R'+str(i)) 
     return (memAdd not in reservedKey) and (not memAdd.isdigit()) and (memAdd not in memAddDict.keys())
     
 
 def preProcess():
     '''
-    check for errors
-    label/variable address map
-    return list of strings where each string is a line in asm code.
-    in case of error, call errorHandler it will return -1.
+    Sanitizing input 
+    Checking for valid labels and variables and hlt instruction
+    Updating memAddDict accordingly
+    Returns inputCode (A list of strings where each string is a sanitized instruction)
+    Returns -1 if it encounters some error (does not include all errors, they are checked elsewhere)
     '''
     global hltCount
     inputCode = []
     lncount = 0
-    # for line in sys.stdin:
     for line in sys.stdin:
         line = readCmnd(line)
         errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in line)+bcol.cend
         if len(line):
+
             if line[0] == 'hlt':
                 hltCount += 1
-            if gotError(line,lncount):
+
+            if gotError(line,lncount): #Checking for basic errors
                 return -1
             
             if line[0] == 'var':
@@ -230,23 +271,24 @@ def preProcess():
         print(bcol.cred+"Missing Halt Instruction"+bcol.cend,errLine,bcol.cyel+"Note: Last instruction must be hlt."+bcol.cend, sep='\n')
         return -1
     
-    varidx = 1
+    #Updating the memAddDict
+    varidx = 0
     for addKey in memAddDict.keys():
-        if memAddDict[addKey] == -1:
-            memAddDict[addKey] = varidx+lncount-1
+        if memAddDict[addKey] == -1:    #Checking for variable names
+            memAddDict[addKey] = varidx+lncount  #Assigning a memory address to corresponding variable after all instructions are read
             varidx += 1
     return inputCode
 
+
+#Wrapper function to print bin output in stdout
 def writeBin(binOut):
-    '''
-    taking a string which is a new line of code and writing it in output file.
-    '''
-    sys.stdout.write(binOut+'\n')
+    sys.stdout.write(binOut + '\n')
+
 
 def runAssembler(asmCode):
     global lnNo
     global asmLnCount
-    for codeLine in asmCode:
+    for codeLine in asmCode:    #Interpreting instructions
         typ = getOpType(codeLine)
         if typ == -1:
             return 
@@ -255,14 +297,16 @@ def runAssembler(asmCode):
             return 
         writeBin(binOut)
         asmLnCount += 1
-        lnNo='At Instruction: '+ str(asmLnCount)
+        lnNo = 'At Instruction: ' + str(asmLnCount)
 
 
 def main():
     asmCode = preProcess()
-    if(asmCode != -1):
+    if asmCode != -1:  #Checking if encountered an error in preProcess.
         runAssembler(asmCode)
 
+
+#Driver code
 if __name__ == "__main__":
     main()
 
