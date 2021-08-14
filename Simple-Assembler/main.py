@@ -53,7 +53,10 @@ binEncoding = [['u2','r','r','r'],['r','im'],
 def givBin(intVal,bitsize):
     intVal = int(intVal)
     binStr = str(bin(intVal))[2:]
-    binStr = '0'*(bitsize - len(binStr)) + binStr
+    if bitsize > len(binStr):
+        binStr = '0'*(bitsize - len(binStr)) + binStr
+    else:
+        binStr = binStr[(len(binStr) - bitsize):]
     return binStr
     
 
@@ -124,7 +127,7 @@ def genBin(typ, cmnd):
             if not(isValidMemAdd(cmnd[idx],False)):
                 print(bcol.cred+"Illegal Memory Address"+bcol.cend,lnNo)
                 print(errLine)
-                print(bcol.cyel+"Note: Memory Address can't be reserved keywords/numerical or existing labels/variables."+bcol.cend)
+                print(bcol.cyel+"Note: Memory Address can't be reserved keywords/numerical."+bcol.cend)
                 return -1
             try:
                 addBin = givBin(memAddDict[cmnd[idx]],8)
