@@ -57,6 +57,28 @@ def givBin(intVal,bitsize):
     return binStr
     
 
+def isValidMemAdd (memAdd,chk):
+    '''
+    Checks if given label/variable:
+        is not a reserved keyword (Instruction or register)
+        is not purely numerical and does not contain special characters (other than _)
+        is not an existing label/variable name
+    '''
+    reservedKey = list(regList.keys())
+    reservedKey.remove('movI')
+    reservedKey.remove('movR')
+    reservedKey.append('mov')
+    reservedKey.append('FLAGS')
+    if(chk):
+        reservedKey += list(memAddDict.keys())
+    for i in range (7):
+        reservedKey.append('R'+str(i))
+    for ltr in memAdd:
+        if not ltr.isdigit() and (not(('a' <= ltr <= 'z') or ('A' <= ltr <= 'Z') or (ltr == '_'))):
+            return False
+    return (memAdd not in reservedKey) and (not memAdd.isdigit())
+
+
 def genBin(typ, cmnd):
     '''
     Converts a given instruction into binary.
@@ -99,7 +121,11 @@ def genBin(typ, cmnd):
                 return -1
 
         elif inst == 'mem':
-
+            if not(isValidMemAdd(cmnd[idx],False)):
+                print(bcol.cred+"Illegal Memory Address"+bcol.cend,lnNo)
+                print(errLine)
+                print(bcol.cyel+"Note: Memory Address can't be reserved keywords/numerical or existing labels/variables."+bcol.cend)
+                return -1
             try:
                 addBin = givBin(memAddDict[cmnd[idx]],8)
                 binOut += addBin
@@ -204,27 +230,6 @@ def gotError(cmndLine,lncount):
 #Wrapper function to convert a string into a list of strings after stripping whitespaces
 def readCmnd(cmndLine):
     return cmndLine.split()
-
-
-def isValidMemAdd (memAdd):
-    '''
-    Checks if given label/variable:
-        is not a reserved keyword (Instruction or register)
-        is not purely numerical and does not contain special characters (other than _)
-        is not an existing label/variable name
-    '''
-    reservedKey = list(regList.keys())
-    reservedKey.remove('movI')
-    reservedKey.remove('movR')
-    reservedKey.append('mov')
-    reservedKey.append('FLAGS')
-    reservedKey += list(memAddDict.keys())
-    for i in range (7):
-        reservedKey.append('R'+str(i))
-    for ltr in memAdd:
-        if not ltr.isdigit() and (not(('a' <= ltr <= 'z') or ('A' <= ltr <= 'Z') or (ltr == '_'))):
-            return False
-    return (memAdd not in reservedKey) and (not memAdd.isdigit())
     
 
 def preProcess():
@@ -250,7 +255,7 @@ def preProcess():
                 return -1
             
             if line[0] == 'var':
-                if isValidMemAdd(line[1]):
+                if isValidMemAdd(line[1],True):
                     memAddDict[line[1]] = -1
                     lncount -= 1
                 else:
@@ -260,7 +265,7 @@ def preProcess():
                     return -1
 
             elif line[0][-1] == ':':
-                if isValidMemAdd(line[0][:-1]):
+                if isValidMemAdd(line[0][:-1],True):
                     memAddDict[line[0][:-1]] = lncount
                     inputCode.append(line[1:])
                 else:
