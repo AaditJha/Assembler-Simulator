@@ -44,7 +44,9 @@ regList = {
 
 
 #This is the ISA instruction format corresponding to type.
-binEncoding = [['u2','r','r','r'],['r','im'],['u5','r','r'],['r','mem'],['u3','mem'],['u11']]
+binEncoding = [['u2','r','r','r'],['r','im'],
+['u5','r','r'],['r','mem'],['u3','mem'],
+['u11']]
 
 
 #Helper function for binary padding
@@ -52,7 +54,7 @@ def givBin(intVal,bitsize):
     intVal = int(intVal)
     binStr = str(bin(intVal))[2:]
     binStr = '0'*(bitsize - len(binStr)) + binStr
-    return 
+    return binStr
     
 
 def genBin(typ, cmnd):
@@ -216,9 +218,13 @@ def isValidMemAdd (memAdd):
     reservedKey.remove('movR')
     reservedKey.append('mov')
     reservedKey.append('FLAGS')
+    reservedKey += list(memAddDict.keys())
     for i in range (7):
-        reservedKey.append('R'+str(i)) 
-    return (memAdd not in reservedKey) and (not memAdd.isdigit()) and (memAdd not in memAddDict.keys())
+        reservedKey.append('R'+str(i))
+    for ltr in memAdd:
+        if not ltr.isdigit() and (not(('a' <= ltr <= 'z') or ('A' <= ltr <= 'Z') or (ltr == '_'))):
+            return False
+    return (memAdd not in reservedKey) and (not memAdd.isdigit())
     
 
 def preProcess():
@@ -266,7 +272,10 @@ def preProcess():
             else:
                 inputCode.append(line)
             lncount += 1
-
+    
+    if len(inputCode) == 0:
+        return -1
+        
     if inputCode[-1][0] != 'hlt' :
         print(bcol.cred+"Missing Halt Instruction"+bcol.cend,errLine,bcol.cyel+"Note: Last instruction must be hlt."+bcol.cend, sep='\n')
         return -1
@@ -302,7 +311,7 @@ def runAssembler(asmCode):
 
 def main():
     asmCode = preProcess()
-    if asmCode != -1:  #Checking if encountered an error in preProcess.
+    if (asmCode != -1):  #Checking if encountered an error in preProcess.
         runAssembler(asmCode)
 
 
