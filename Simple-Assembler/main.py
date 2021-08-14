@@ -2,7 +2,15 @@ import sys
 from collections import OrderedDict
 #regList -> Mapping between opcode in decimal and Type (A as 0,B as 1,...)
 hltCount=0
+asmLnCount = 0
+lnNo = ''
 memAddDict = OrderedDict()
+
+class bcol:
+    cend = '\33[0m'
+    cred = '\33[31m'
+    cyel = '\33[33m'
+    cblu = '\33[34m'
 
 regList = {
     "add"  :0,
@@ -39,6 +47,9 @@ def givBin(intVal,bitsize):
     return binStr
 
 def genBin(typ, cmnd):
+    errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in cmnd)+bcol.cend
+    errLine = errLine.replace("movR","mov")
+    errLine = errLine.replace("movI","mov")
     opDec = list(regList.keys()).index(cmnd[0])
     opBin  = givBin(opDec,5)
     binOut = opBin
@@ -46,7 +57,8 @@ def genBin(typ, cmnd):
     idx = 1
     for inst in instISA:
         if idx == len(cmnd) and typ != 5:
-            print ("Syntax Error")
+            print(bcol.cred+"Syntax Error"+bcol.cend,lnNo)
+            print(errLine)
             return -1
         if inst == 'r':
             if(cmnd[idx] == "FLAGS"):
@@ -54,12 +66,15 @@ def genBin(typ, cmnd):
                     rBin = "111"
                     binOut += rBin
                 else:
-                    print ("Illegal Flag Usage")
+                    print(bcol.cred+"Illegal Flag Usage"+bcol.cend,lnNo)
+                    print(errLine)
+                    return -1
             elif (cmnd[idx][0] == 'R') and cmnd[idx][1:].isdigit() and 0 <= int(cmnd[idx][1:]) <= 6:
                 rBin = givBin(cmnd[idx][1:],3)
                 binOut += rBin
             else:
-                print("Typo Error")
+                print(bcol.cred+"Invalid Register Type"+bcol.cend,lnNo)
+                print(errLine)
                 return -1
 
         elif inst == 'mem':
@@ -67,18 +82,24 @@ def genBin(typ, cmnd):
                 addBin = givBin(memAddDict[cmnd[idx]],8)
                 binOut += addBin
             except KeyError:
-                print("Missing Variable/Label")
+                print(bcol.cred+"Missing Variable/Label"+bcol.cend,lnNo)
+                print(errLine)
                 return -1
             except:
-                print ("General Syntax Error")
+                print(bcol.cred+"General Syntax Error"+bcol.cend,lnNo)
+                print(errLine)
                 return -1    
     
         elif inst == 'im':
             if not (cmnd[idx][1:].isdigit()):
-                print("Immediate value not an integer")
+                print(bcol.cred+"Invalid Immediate Value"+bcol.cend,lnNo)
+                print(errLine)
+                print(bcol.cyel+"Note: Immediate Value must be an integer and in range [0,255]."+bcol.cend)
                 return -1
             if not (0 <= int(cmnd[idx][1:]) <= 255):
-                print ("Immediate value not in range")    
+                print(bcol.cred+"Invalid Immediate Value"+bcol.cend,lnNo)    
+                print(errLine)
+                print(bcol.cyel+"Note: Immediate Value must be an integer and in range [0,255]."+bcol.cend)
                 return -1
             imBin = givBin(cmnd[idx][1:],8)
             binOut += imBin
@@ -90,11 +111,13 @@ def genBin(typ, cmnd):
 
         idx += 1
     if idx != len(cmnd):
-        print ("Syntax Error")
+        print(bcol.cred+"Syntax Error"+bcol.cend,lnNo)
+        print(errLine)
         return -1
     return binOut
 
 def getOpType(cmnd):
+    errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in cmnd)+bcol.cend
     if cmnd[0] == 'mov':
         if cmnd[2][0] == "$":
             cmnd[0] = 'movI'
@@ -103,31 +126,38 @@ def getOpType(cmnd):
             cmnd[0] = 'movR'
             return regList["movR"]
         else:
-            print ("Typo Error")
+            print(bcol.cred+"Invalid Instruction "+bcol.cend,lnNo)
+            print(errLine)
             return -1
     else:
         try: 
             return regList[cmnd[0]]
         except KeyError:
-            print("Typo Error")
+            print(bcol.cred+"Typo Error"+bcol.cend,lnNo)
+            print(errLine)
             return -1
         except:
-            print("General Syntax Error")
+            print(bcol.cred+"General Syntax Error"+bcol.cend,lnNo)
+            print(errLine)
             return -1
 
-def gotError(cmndLine,lncount,lnNum):
-    lnNo='at Line : '+ str(lnNum)
+def gotError(cmndLine,lncount):
+    errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in cmndLine)+bcol.cend
     if hltCount > 1:
-        print(" Multiple hlt instructions", lnNo)
+        print(bcol.cred+"Multiple hlt instructions"+bcol.cend, lnNo)
+        print(errLine)
         return True
     if lncount >= 256:
-        print("Total number of operations exceeded", lnNo)
+        print(bcol.cred+"Total number of operations exceeded"+bcol.cend, lnNo)
+        print(errLine)
         return True
     if cmndLine[0] == 'var' and lncount != 0:
-        print("Invalid variable assignment", lnNo)
+        print(bcol.cred+"Invalid variable assignment"+bcol.cend, lnNo)
+        print(errLine)
         return True
     if (cmndLine[0] == 'hlt' and len(cmndLine) > 1) :
-        print ("Invalid use of hlt function", lnNo)
+        print(bcol.cred+"Invalid use of hlt function"+bcol.cend, lnNo)
+        print(errLine)
         return True
     return False
     
@@ -163,12 +193,13 @@ def preProcess():
     inputCode = []
     lncount = 0
     # for line in sys.stdin:
-    for lnNum,line in enumerate(sys.stdin):
+    for line in sys.stdin:
         line = readCmnd(line)
+        errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in line)+bcol.cend
         if len(line):
             if line[0] == 'hlt':
                 hltCount += 1
-            if gotError(line,lncount,lnNum):
+            if gotError(line,lncount):
                 return -1
             
             if line[0] == 'var':
@@ -176,7 +207,9 @@ def preProcess():
                     memAddDict[line[1]] = -1
                     lncount -= 1
                 else:
-                    print("Variable Misuse")
+                    print(bcol.cred+"Illegal Variable Assignment"+bcol.cend,lnNo)
+                    print(errLine)
+                    print(bcol.cyel+"Note: Variables can't be reserved keywords/numerical or existing labels/variables."+bcol.cend)
                     return -1
 
             elif line[0][-1] == ':':
@@ -184,7 +217,9 @@ def preProcess():
                     memAddDict[line[0][:-1]] = lncount
                     inputCode.append(line[1:])
                 else:
-                    print("Label Misuse for Label",line[0][-1])
+                    print(bcol.cred+"Illegal Label Assignment"+bcol.cend,lnNo)
+                    print(errLine)
+                    print(bcol.cyel+"Note: Labels can't be reserved keywords/numerical or existing labels/variables."+bcol.cend)
                     return -1
 
             else:
@@ -192,11 +227,9 @@ def preProcess():
             lncount += 1
 
     if inputCode[-1][0] != 'hlt' :
-        print("Missing Halt Instruction")
+        print(bcol.cred+"Missing Halt Instruction"+bcol.cend,errLine,bcol.cyel+"Note: Last instruction must be hlt."+bcol.cend, sep='\n')
         return -1
     
-
-
     varidx = 1
     for addKey in memAddDict.keys():
         if memAddDict[addKey] == -1:
@@ -211,6 +244,8 @@ def writeBin(binOut):
     sys.stdout.write(binOut+'\n')
 
 def runAssembler(asmCode):
+    global lnNo
+    global asmLnCount
     for codeLine in asmCode:
         typ = getOpType(codeLine)
         if typ == -1:
@@ -219,6 +254,9 @@ def runAssembler(asmCode):
         if binOut == -1:
             return 
         writeBin(binOut)
+        asmLnCount += 1
+        lnNo='At Instruction: '+ str(asmLnCount)
+
 
 def main():
     asmCode = preProcess()
