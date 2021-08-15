@@ -178,6 +178,9 @@ def getOpType(cmnd):
     Else prints an error and returns -1
     '''
     errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in cmnd)+bcol.cend
+    if len(cmnd) == 0:
+        print(bcol.cred+"Missing Instruction"+bcol.cend,lnNo)
+        return -1
     if cmnd[0] == 'mov':
         if cmnd[2][0] == "$":
             cmnd[0] = 'movI'
