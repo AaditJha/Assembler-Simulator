@@ -14,15 +14,9 @@ import sys
 import binConvertor
 
 class registerFile():
-    reg = [] #Store 7 values R0 - R6
-    FLAGS = [] #Store 4 values V L G E
-    
-    def __init__(self):
-        for i in range(7):
-            self.reg.append(0)
-        for i in range(4):
-            self.FLAGS.append(0)
-            
+    reg = [0]*7 #Store 7 values R0 - R6
+    FLAGS = [0]*4 #Store 4 values V L G E
+        
     def dumpFLAGS(self):
         sys.stdout.write('000000000000')
         for flag in self.FLAGS:
@@ -37,12 +31,6 @@ class registerFile():
     def updateReg(self,idx,val):
         #val is integer.
         self.reg[idx] = val
-    
-    def resetFLAGS(self):
-        for i in range(4):
-            self.FLAGS[i] = 0
 
-    def updateFLAGS(self,idx):
-        self.FLAGS[idx] = 1
 
 

@@ -15,12 +15,9 @@ import sys
 import binConvertor
 
 class memHandler():
-    mem = []
     MEM_SIZE = 256
-    def __init__(self):
-        for i in range(self.MEM_SIZE):
-            self.mem.append('0000000000000000')
-
+    mem = ['0000000000000000']*MEM_SIZE
+    
     def load(self,inputFile):
         for idx,line in enumerate(inputFile):
             self.mem[idx] = line.rstrip("\n")
@@ -32,10 +29,7 @@ class memHandler():
         return binConvertor.binToInt(self.mem[memAdd])
 
     def loadValueAtAdd(self,memAdd,val):
-        self.mem[memAdd] = binConvertor.intToBin(val)
-
-    def update(self,memAdd,newVal):
-        self.mem[memAdd] = binConvertor.intToBin(newVal,16)
+        self.mem[memAdd] = binConvertor.intToBin(val,16)
     
     def dump(self):
         for memAdd in self.mem:
