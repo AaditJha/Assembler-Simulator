@@ -6,5 +6,20 @@ Functionality
 update: update PC accordingly
 dump: print current PC_STATE as 8 bit binary
 '''
+import sys
+import binConvertor
+
 class PC():
-    pass
+    COUNTER = 0
+    def __init__(self):
+        self.COUNTER = 0
+    
+    def update(self,updateParam):
+        if updateParam == -1:
+            self.COUNTER += 1
+        else:
+            self.COUNTER = binConvertor.binToInt(updateParam)
+    
+    def dump(self):
+        sys.stdout.write(binConvertor.intToBin(self.COUNTER,8) + ' ')
+        

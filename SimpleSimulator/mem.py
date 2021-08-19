@@ -11,6 +11,32 @@ dump: dump the memory file in stdout.
 
 Create a class.
 '''
+import sys
+import binConvertor
 
 class memHandler():
-    pass
+    mem = []
+    MEM_SIZE = 256
+    def __init__(self):
+        for i in range(self.MEM_SIZE):
+            self.mem.append('0000000000000000')
+
+    def load(self,inputFile):
+        for idx,line in enumerate(inputFile):
+            self.mem[idx] = line.rstrip("\n")
+    
+    def getInst(self,progCount):
+        return self.mem[progCount]
+
+    def getValueAtAdd(self,memAdd):
+        return binConvertor.binToInt(self.mem[memAdd])
+
+    def loadValueAtAdd(self,memAdd,val):
+        self.mem[memAdd] = binConvertor.intToBin(val)
+
+    def update(self,memAdd,newVal):
+        self.mem[memAdd] = binConvertor.intToBin(newVal,16)
+    
+    def dump(self):
+        for memAdd in self.mem:
+            sys.stdout.write(memAdd+'\n')
