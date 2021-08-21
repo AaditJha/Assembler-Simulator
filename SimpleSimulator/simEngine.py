@@ -34,7 +34,7 @@ class ISA():
         regVal = paramList[3][regBIdx] + paramList[3][regCIdx]
         if regVal > 65535:
             regVal %= 65536
-            paramList[4] = 1
+            paramList[4] = 8
         paramList[3][regAIdx] = regVal
         return -1,paramList[4]
 
@@ -49,7 +49,7 @@ class ISA():
         regCIdx = paramList[2]
         if paramList[3][regCIdx] > paramList[3][regBIdx]:
             paramList[3][regAIdx] = 0
-            paramList[4] = 1
+            paramList[4] = 8
         else:
             paramList[3][regAIdx] = paramList[3][regBIdx] - paramList[3][regCIdx]
         return -1,paramList[4]
@@ -264,6 +264,7 @@ class execRunner():
 
     def encode(self,opCodeIdx,inst,memFile):
         if(opCodeIdx == 19):
+            self.regObj.FLAGS = 0
             return -1,True
 
         ptr = 5

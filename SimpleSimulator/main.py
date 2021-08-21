@@ -3,7 +3,6 @@ Main Simulator File
 '''
 import sys
 from mem import memHandler
-from regFile import registerFile
 from progCounter import PC
 from simEngine import execRunner
 
@@ -18,5 +17,4 @@ while(not halted):
     pc.dump()
     newPC, halted = sim.execute(newInstruction,memFile)
     pc.update(newPC)
-
 memFile.dump()
