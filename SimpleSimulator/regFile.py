@@ -15,18 +15,13 @@ import binConvertor
 
 class registerFile():
     reg = [0]*7 #Store 7 values R0 - R6
-    FLAGS = [0]*4 #Store 4 values V L G E
+    FLAGS = 0 # V = 8, L = 4, G = 2, E = 1
         
-    def dumpFLAGS(self):
-        sys.stdout.write('000000000000')
-        for flag in self.FLAGS:
-            sys.stdout.write(str(flag))
-        sys.stdout.write('\n') 
 
     def dump(self):
         for _reg in self.reg:
             sys.stdout.write(binConvertor.intToBin(_reg,16) + ' ')
-        self.dumpFLAGS()
+        sys.stdout.write(binConvertor.intToBin(self.FLAGS,16) + '\n')
 
     def updateReg(self,idx,val):
         #val is integer.

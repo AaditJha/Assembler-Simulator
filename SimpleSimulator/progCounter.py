@@ -18,7 +18,7 @@ class PC():
         if updateParam == -1:
             self.COUNTER += 1
         else:
-            self.COUNTER = binConvertor.binToInt(updateParam)
+            self.COUNTER = updateParam
     
     def dump(self):
         sys.stdout.write(binConvertor.intToBin(self.COUNTER,8) + ' ')
