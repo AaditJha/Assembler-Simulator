@@ -21,5 +21,6 @@ while(not halted):
     newPC, halted = sim.execute(newInstruction,memFile)
     memPlot.update(newInstruction)
     pc.update(newPC)
+    
 memFile.dump()
 memPlot.plot()

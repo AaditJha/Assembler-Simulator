@@ -21,7 +21,8 @@ class plotter():
         self.cycleNo += 1
 
     def plot(self):
-        plt.scatter(self.xList,self.yList,"b")
+        plt.scatter(self.xList,self.yList,color='#e63946',marker=".")
         plt.xlabel("Cycle Number")
         plt.ylabel("Memory Address Accessed")
+        plt.title("Memory Address v/s Cycle Number")
         plt.show()

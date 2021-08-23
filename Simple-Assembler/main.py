@@ -223,7 +223,7 @@ def gotError(cmndLine,lncount):
         print(errLine)
         return True
     if cmndLine[0] == 'var' and lncount != 0:
-        print(bcol.cred+"Invalid variable assignment"+bcol.cend, lnNo)
+        print(bcol.cred+"Invalid variable assignment"+bcol.cend,lnNo)
         print(errLine)
         return True
     if (cmndLine[0] == 'hlt' and len(cmndLine) > 1) :
