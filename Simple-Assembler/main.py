@@ -4,8 +4,8 @@ from collections import OrderedDict
 
 #global variables
 hltCount=0
-asmLnCount = 0
 lnNo = ''
+_line = 0
 #OrderedDict that maps labels and variables to its corresponding address in preProcess()
 memAddDict = OrderedDict()
 
@@ -205,7 +205,7 @@ def getOpType(cmnd):
             return -1
 
 
-def gotError(cmndLine,lncount):
+def gotError(cmndLine,lncount,_line):
     '''
     Handles if:
         there are multiple hlt instructions
@@ -213,6 +213,7 @@ def gotError(cmndLine,lncount):
         initialize a variable not at the starting of the code
         hlt used incorrectly
     '''
+    lnNo = 'At Line: ' + str(_line)
     errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in cmndLine)+bcol.cend
     if hltCount > 1:
         print(bcol.cred+"Multiple hlt instructions"+bcol.cend, lnNo)
@@ -247,9 +248,13 @@ def preProcess():
     Returns -1 if it encounters some error (does not include all errors, they are checked elsewhere)
     '''
     global hltCount
+    global _line
     inputCode = []
+    inputCodeLnNo = []
     lncount = 0
     for line in sys.stdin:
+        lnNo = 'At Line: ' + str(_line)
+        _line += 1
         line = readCmnd(line)
         errLine = "Instruction: "+bcol.cblu+" ".join(str(x) for x in line)+bcol.cend
         if len(line):
@@ -257,8 +262,8 @@ def preProcess():
             if line[0] == 'hlt':
                 hltCount += 1
 
-            if gotError(line,lncount): #Checking for basic errors
-                return -1
+            if gotError(line,lncount,_line): #Checking for basic errors
+                return -1,-1
             
             if line[0] == 'var':
                 if isValidMemAdd(line[1],True):
@@ -268,28 +273,30 @@ def preProcess():
                     print(bcol.cred+"Illegal Variable Assignment"+bcol.cend,lnNo)
                     print(errLine)
                     print(bcol.cyel+"Note: Variables can't be reserved keywords/numerical or existing labels/variables."+bcol.cend)
-                    return -1
+                    return -1,-1
 
             elif line[0][-1] == ':':
                 if isValidMemAdd(line[0][:-1],True):
                     memAddDict[line[0][:-1]] = lncount
                     inputCode.append(line[1:])
+                    inputCodeLnNo.append(_line)
                 else:
                     print(bcol.cred+"Illegal Label Assignment"+bcol.cend,lnNo)
                     print(errLine)
                     print(bcol.cyel+"Note: Labels can't be reserved keywords/numerical or existing labels/variables."+bcol.cend)
-                    return -1
+                    return -1,-1
 
             else:
                 inputCode.append(line)
+                inputCodeLnNo.append(_line)
             lncount += 1
     
     if len(inputCode) == 0:
-        return -1
+        return -1,-1
         
     if inputCode[-1][0] != 'hlt' :
         print(bcol.cred+"Missing Halt Instruction"+bcol.cend,errLine,bcol.cyel+"Note: Last instruction must be hlt."+bcol.cend, sep='\n')
-        return -1
+        return -1,-1
     
     #Updating the memAddDict
     varidx = 0
@@ -297,7 +304,7 @@ def preProcess():
         if memAddDict[addKey] == -1:    #Checking for variable names
             memAddDict[addKey] = varidx+lncount  #Assigning a memory address to corresponding variable after all instructions are read
             varidx += 1
-    return inputCode
+    return inputCode, inputCodeLnNo
 
 
 #Wrapper function to print bin output in stdout
@@ -305,10 +312,10 @@ def writeBin(binOut):
     sys.stdout.write(binOut + '\n')
 
 
-def runAssembler(asmCode):
+def runAssembler(asmCode,asmCodeLnNo):
     global lnNo
-    global asmLnCount
-    for codeLine in asmCode:    #Interpreting instructions
+    for idx, codeLine in enumerate(asmCode):    #Interpreting instructions
+        lnNo = 'At Line: ' + str(asmCodeLnNo[idx])
         typ = getOpType(codeLine)
         if typ == -1:
             return 
@@ -316,14 +323,12 @@ def runAssembler(asmCode):
         if binOut == -1:
             return 
         writeBin(binOut)
-        asmLnCount += 1
-        lnNo = 'At Instruction: ' + str(asmLnCount)
 
 
 def main():
-    asmCode = preProcess()
+    asmCode, asmCodeLnNo = preProcess()
     if (asmCode != -1):  #Checking if encountered an error in preProcess.
-        runAssembler(asmCode)
+        runAssembler(asmCode,asmCodeLnNo)
 
 
 #Driver code
