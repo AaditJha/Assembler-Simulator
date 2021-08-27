@@ -7,6 +7,7 @@ hltCount=0
 lnNo = ''
 _line = 0
 #OrderedDict that maps labels and variables to its corresponding address in preProcess()
+#maps variable/label name to address and isVariable() (bool)
 memAddDict = OrderedDict()
 
 
@@ -60,7 +61,7 @@ def givBin(intVal,bitsize):
     return binStr
     
 
-def isValidMemAdd (memAdd,chk):
+def isValidMemAdd (memAdd,chk,typ):
     '''
     Checks if given label/variable:
         is not a reserved keyword (Instruction or register)
@@ -79,7 +80,12 @@ def isValidMemAdd (memAdd,chk):
     for ltr in memAdd:
         if not ltr.isdigit() and (not(('a' <= ltr <= 'z') or ('A' <= ltr <= 'Z') or (ltr == '_'))):
             return False
-    return (memAdd not in reservedKey) and (not memAdd.isdigit())
+    retBool = True
+    if typ == 3 and (memAdd in reservedKey):    #D Type
+        retBool = memAddDict[memAdd][1]
+    elif type == 4 and (memAdd in reservedKey): #E
+        retBool = not memAddDict[memAdd][1]
+    return (memAdd not in reservedKey) and (not memAdd.isdigit()) and retBool
 
 
 def genBin(typ, cmnd):
@@ -124,13 +130,13 @@ def genBin(typ, cmnd):
                 return -1
 
         elif inst == 'mem':
-            if not(isValidMemAdd(cmnd[idx],False)):
+            if not(isValidMemAdd(cmnd[idx],False,typ)):
                 print(bcol.cred+"Illegal Memory Address"+bcol.cend,lnNo)
                 print(errLine)
                 print(bcol.cyel+"Note: Memory Address can't be reserved keywords/numerical."+bcol.cend)
                 return -1
             try:
-                addBin = givBin(memAddDict[cmnd[idx]],8)
+                addBin = givBin(memAddDict[cmnd[idx]][0],8)
                 binOut += addBin
             except KeyError:
                 print(bcol.cred+"Missing Variable/Label"+bcol.cend,lnNo)
@@ -146,7 +152,7 @@ def genBin(typ, cmnd):
             if not (cmnd[idx][1:].isdigit()):
                 print(bcol.cred+"Invalid Immediate Value"+bcol.cend,lnNo)
                 print(errLine)
-                print(bcol.cyel+"Note: Immediate Value must be an integer and in range [0,255]."+bcol.cend)
+                print(bcol.cyel+"Note: Immediate Value must be an integer."+bcol.cend)
                 return -1
 
             if not (0 <= int(cmnd[idx][1:]) <= 255):
@@ -266,8 +272,8 @@ def preProcess():
                 return -1,-1
             
             if line[0] == 'var':
-                if isValidMemAdd(line[1],True):
-                    memAddDict[line[1]] = -1
+                if isValidMemAdd(line[1],True,0):
+                    memAddDict[line[1]] = [-1,True]
                     lncount -= 1
                 else:
                     print(bcol.cred+"Illegal Variable Assignment"+bcol.cend,lnNo)
@@ -276,8 +282,8 @@ def preProcess():
                     return -1,-1
 
             elif line[0][-1] == ':':
-                if isValidMemAdd(line[0][:-1],True):
-                    memAddDict[line[0][:-1]] = lncount
+                if isValidMemAdd(line[0][:-1],True,0):
+                    memAddDict[line[0][:-1]] = [lncount,False]
                     inputCode.append(line[1:])
                     inputCodeLnNo.append(_line)
                 else:
@@ -295,14 +301,14 @@ def preProcess():
         return -1,-1
         
     if inputCode[-1][0] != 'hlt' :
-        print(bcol.cred+"Missing Halt Instruction"+bcol.cend,errLine,bcol.cyel+"Note: Last instruction must be hlt."+bcol.cend, sep='\n')
+        print(bcol.cred+"Missing Halt Instruction As Last Instruction"+bcol.cend+' At Line: '+str(inputCodeLnNo[-1]),errLine,bcol.cyel+"Note: Last instruction must be hlt."+bcol.cend, sep='\n')
         return -1,-1
     
     #Updating the memAddDict
     varidx = 0
     for addKey in memAddDict.keys():
-        if memAddDict[addKey] == -1:    #Checking for variable names
-            memAddDict[addKey] = varidx+lncount  #Assigning a memory address to corresponding variable after all instructions are read
+        if memAddDict[addKey][0] == -1:    #Checking for variable names
+            memAddDict[addKey][0] = varidx+lncount  #Assigning a memory address to corresponding variable after all instructions are read
             varidx += 1
     return inputCode, inputCodeLnNo
 
@@ -334,4 +340,3 @@ def main():
 #Driver code
 if __name__ == "__main__":
     main()
-
