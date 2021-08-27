@@ -83,7 +83,7 @@ def isValidMemAdd (memAdd,chk,typ):
     retBool = True
     if typ == 3 and (memAdd in memAddDict.keys()):    #D Type
         retBool = memAddDict[memAdd][1]
-    elif type == 4 and (memAdd in memAddDict.keys()): #E
+    elif typ == 4 and (memAdd in memAddDict.keys()): #E
         retBool = not memAddDict[memAdd][1]
     return (memAdd not in reservedKey) and (not memAdd.isdigit()) and retBool
 
